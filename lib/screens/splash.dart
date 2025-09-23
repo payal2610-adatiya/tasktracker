@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../task_color/app_color.dart';
+
 import 'login.dart';
 import 'home_screen.dart';
 
@@ -42,17 +44,31 @@ class _SplashScreenState extends State<SplashScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        color: Colors.grey[900],
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [AppColors.saddle, AppColors.caramel, AppColors.latte],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              // Logo Circle
               Container(
+                padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.brown,
+                  color: AppColors.terracotta,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.tawny.withOpacity(0.5),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
                 ),
-                padding: const EdgeInsets.all(24),
                 child: const Icon(
                   Icons.task_alt,
                   size: 80,
@@ -60,17 +76,22 @@ class _SplashScreenState extends State<SplashScreen> {
                 ),
               ),
               const SizedBox(height: 24),
+
+              // App Title
               const Text(
                 "TaskTrack",
                 style: TextStyle(
                   fontSize: 36,
                   fontWeight: FontWeight.bold,
-                  color: Colors.brown,
+                  color: AppColors.saddle,
+                  letterSpacing: 1.2,
                 ),
               ),
               const SizedBox(height: 24),
+
+              // Progress Indicator
               const CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.brown),
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.terracotta),
                 strokeWidth: 4,
               ),
             ],

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../db/task_database.dart';
+import '../task_color/app_color.dart';
 import 'home_screen.dart';
 import 'signup.dart';
+
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -38,16 +40,20 @@ class _LoginScreenState extends State<LoginScreen> {
         context: context,
         builder: (ctx) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Text('Login Failed'),
+          title: const Text(
+            'Login Failed',
+            style: TextStyle(color: AppColors.terracotta),
+          ),
           content: const Text('Invalid username or password.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(),
               style: TextButton.styleFrom(
-                backgroundColor: Colors.grey[800],
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                backgroundColor: AppColors.latte,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text('OK', style: TextStyle(color: Colors.brown)),
+              child: const Text('OK', style: TextStyle(color: AppColors.saddle)),
             ),
           ],
         ),
@@ -59,93 +65,147 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[900],
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Card(
-            color: Colors.grey[850],
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.brown,
-                      ),
-                      child: const Icon(Icons.task_alt, size: 60, color: Colors.white),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      "Welcome Back",
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.brown),
-                    ),
-                    const SizedBox(height: 24),
-                    TextFormField(
-                      controller: _usernameCtrl,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
-                        prefixIcon: const Icon(Icons.person_outline, color: Colors.brown),
-                        labelText: "Username",
-                        labelStyle: const TextStyle(color: Colors.white70),
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: const BorderSide(color: Colors.brown, width: 1.5),
-                          borderRadius: BorderRadius.circular(16),
+      backgroundColor: Colors.transparent,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [AppColors.caramel, AppColors.latte],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Card(
+              elevation: 8,
+              color: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Padding(
+                padding:
+                const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Logo
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppColors.terracotta,
                         ),
-                        focusedBorder: OutlineInputBorder(
-                          borderSide: const BorderSide(color: Colors.brown, width: 2),
-                          borderRadius: BorderRadius.circular(16),
+                        child: const Icon(
+                          Icons.task_alt,
+                          size: 60,
+                          color: Colors.white,
                         ),
                       ),
-                      validator: (v) => v == null || v.trim().isEmpty ? 'Enter username' : null,
-                    ),
-                    const SizedBox(height: 18),
-                    TextFormField(
-                      controller: _passwordCtrl,
-                      obscureText: true,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
-                        prefixIcon: const Icon(Icons.lock_outline, color: Colors.brown),
-                        labelText: "Password",
-                        labelStyle: const TextStyle(color: Colors.white70),
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: const BorderSide(color: Colors.brown, width: 1.5),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderSide: const BorderSide(color: Colors.brown, width: 2),
-                          borderRadius: BorderRadius.circular(16),
+                      const SizedBox(height: 16),
+
+                      const Text(
+                        "Welcome Back",
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.saddle,
                         ),
                       ),
-                      validator: (v) => v == null || v.trim().isEmpty ? 'Enter password' : null,
-                    ),
-                    const SizedBox(height: 28),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        onPressed: _loading ? null : _login,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.brown,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        ),
-                        child: _loading
-                            ? const CircularProgressIndicator(color: Colors.white)
-                            : const Text("Login", style: TextStyle(fontSize: 18, color: Colors.white)),
+                      const SizedBox(height: 8),
+                      const Text(
+                        "Login to continue",
+                        style: TextStyle(color: AppColors.mocha, fontSize: 15),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextButton(
-                      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SignUpScreen())),
-                      child: const Text("Don't have an account? Sign up", style: TextStyle(color: Colors.brown)),
-                    ),
-                  ],
+                      const SizedBox(height: 24),
+
+                      // Username
+                      TextFormField(
+                        controller: _usernameCtrl,
+                        decoration: InputDecoration(
+                          prefixIcon: const Icon(Icons.person_outline,
+                              color: AppColors.terracotta),
+                          labelText: "Username",
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        validator: (v) =>
+                        v == null || v.trim().isEmpty
+                            ? 'Enter username'
+                            : null,
+                      ),
+                      const SizedBox(height: 18),
+
+                      // Password
+                      TextFormField(
+                        controller: _passwordCtrl,
+                        obscureText: true,
+                        decoration: InputDecoration(
+                          prefixIcon: const Icon(Icons.lock_outline,
+                              color: AppColors.terracotta),
+                          labelText: "Password",
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        validator: (v) =>
+                        v == null || v.trim().isEmpty
+                            ? 'Enter password'
+                            : null,
+                      ),
+                      const SizedBox(height: 28),
+
+                      // Login Button
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            gradient: const LinearGradient(
+                              colors: [AppColors.terracotta, AppColors.caramel],
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                            ),
+                          ),
+                          child: ElevatedButton(
+                            onPressed: _loading ? null : _login,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16)),
+                            ),
+                            child: _loading
+                                ? const CircularProgressIndicator(
+                                color: Colors.white)
+                                : const Text(
+                              "Login",
+                              style: TextStyle(
+                                  fontSize: 18, color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Sign Up link
+                      TextButton(
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const SignUpScreen()),
+                        ),
+                        child: const Text(
+                          "Don't have an account? Sign up",
+                          style: TextStyle(color: AppColors.saddle),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

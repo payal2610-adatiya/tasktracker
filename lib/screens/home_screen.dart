@@ -3,8 +3,10 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../db/task_database.dart';
 import '../model/task_model.dart';
+import '../task_color/app_color.dart';
 import 'add_edit_task_screen.dart';
 import 'login.dart';
+
 
 class HomeScreen extends StatefulWidget {
   final int userId;
@@ -26,7 +28,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _load() async {
-    final maps = await db.getTasks(userId: widget.userId, status: filter == 'all' ? null : filter);
+    final maps = await db.getTasks(
+      userId: widget.userId,
+      status: filter == 'all' ? null : filter,
+    );
     setState(() => tasks = maps.map((m) => Task.fromMap(m)).toList());
   }
 
@@ -51,17 +56,20 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('logged_user_id');
-    Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+    );
   }
 
   Color priorityColor(String p) {
     switch (p) {
       case 'high':
-        return Colors.brown;
+        return AppColors.saddle;
       case 'medium':
-        return Colors.grey;
+        return AppColors.terracotta;
       default:
-        return Colors.black54;
+        return AppColors.grey;
     }
   }
 
@@ -79,18 +87,22 @@ class _HomeScreenState extends State<HomeScreen> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
           gradient: LinearGradient(
-            colors: isDone ? [Colors.grey.shade800, Colors.grey.shade700] : [Colors.grey.shade900, Colors.grey.shade800],
+            colors: isDone
+                ? [AppColors.grey.withOpacity(0.6), AppColors.grey.withOpacity(0.4)]
+                : [AppColors.toast, AppColors.latte],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          border: Border(left: BorderSide(color: priorityColor(t.priority), width: 6)),
+          border: Border(
+            left: BorderSide(color: priorityColor(t.priority), width: 6),
+          ),
         ),
         child: Row(
           children: [
             Checkbox(
               value: isDone,
               onChanged: (_) => _toggleComplete(t),
-              activeColor: Colors.brown,
+              activeColor: AppColors.saddle,
               checkColor: Colors.white,
             ),
             const SizedBox(width: 8),
@@ -98,26 +110,70 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(t.title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, decoration: isDone ? TextDecoration.lineThrough : null)),
+                  Text(
+                    t.title,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.black,
+                      decoration:
+                      isDone ? TextDecoration.lineThrough : null,
+                    ),
+                  ),
                   if (t.description.isNotEmpty)
-                    Text(t.description, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.grey[400], fontSize: 13)),
+                    Text(
+                      t.description,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.grey,
+                        fontSize: 13,
+                      ),
+                    ),
                   const SizedBox(height: 6),
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(color: priorityColor(t.priority).withOpacity(0.15), borderRadius: BorderRadius.circular(12)),
-                        child: Text(t.priority.toUpperCase(), style: TextStyle(color: priorityColor(t.priority), fontSize: 12, fontWeight: FontWeight.w600)),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color:
+                          priorityColor(t.priority).withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          t.priority.toUpperCase(),
+                          style: TextStyle(
+                            color: priorityColor(t.priority),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                       const SizedBox(width: 10),
                       if (dueText.isNotEmpty)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(color: Colors.brown.shade50, borderRadius: BorderRadius.circular(12)),
-                          child: Text(dueText, style: TextStyle(color: Colors.brown, fontSize: 12, fontWeight: FontWeight.w500)),
-                        )
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.mocha,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            dueText,
+                            style: const TextStyle(
+                              color: AppColors.saddle,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
                     ],
-                  )
+                  ),
                 ],
               ),
             )
@@ -130,20 +186,33 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[900],
+      backgroundColor: AppColors.latte,
       appBar: AppBar(
         title: const Text("My Tasks"),
         centerTitle: true,
-        backgroundColor: Colors.brown,
-        actions: [IconButton(onPressed: _logout, icon: const Icon(Icons.logout))],
+        backgroundColor: AppColors.terracotta,
+        actions: [
+          IconButton(
+            onPressed: _logout,
+            icon: const Icon(Icons.logout, color: Colors.white),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.brown,
+        backgroundColor: AppColors.terracotta,
         onPressed: () => _openAddEdit(),
-        child: const Icon(Icons.add),
+        child: const Icon(Icons.add, color: Colors.white),
       ),
       body: tasks.isEmpty
-          ? const Center(child: Text("No tasks found", style: TextStyle(color: Colors.white70, fontSize: 16)))
+          ? const Center(
+        child: Text(
+          "No tasks found",
+          style: TextStyle(
+            color: AppColors.grey,
+            fontSize: 16,
+          ),
+        ),
+      )
           : ListView.builder(
         itemCount: tasks.length,
         itemBuilder: (_, i) => _buildTaskCard(tasks[i]),

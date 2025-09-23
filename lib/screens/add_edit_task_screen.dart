@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import '../db/task_database.dart';
 import '../model/task_model.dart';
+import '../db/task_database.dart';
+import '../task_color/app_color.dart';
+
 
 class AddEditTaskScreen extends StatefulWidget {
   final Task? task;
   final int userId;
-  const AddEditTaskScreen({Key? key, this.task, required this.userId}) : super(key: key);
+
+  const AddEditTaskScreen({super.key, this.task, required this.userId});
 
   @override
   State<AddEditTaskScreen> createState() => _AddEditTaskScreenState();
@@ -16,8 +18,9 @@ class _AddEditTaskScreenState extends State<AddEditTaskScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
-  DateTime? _dueDate;
-  String _priority = 'low';
+  DateTime? _selectedDate;
+  bool _loading = false;
+
   final db = MyDatabase();
 
   @override
@@ -26,145 +29,186 @@ class _AddEditTaskScreenState extends State<AddEditTaskScreen> {
     if (widget.task != null) {
       _titleCtrl.text = widget.task!.title;
       _descCtrl.text = widget.task!.description;
-      _dueDate = DateTime.tryParse(widget.task!.dueDate);
-      _priority = widget.task!.priority;
+      _selectedDate = DateTime.parse(widget.task!.dueDate);
     }
   }
 
-  @override
-  void dispose() {
-    _titleCtrl.dispose();
-    _descCtrl.dispose();
-    super.dispose();
+  Future<void> _saveTask() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _loading = true);
+
+    final title = _titleCtrl.text.trim();
+    final desc = _descCtrl.text.trim();
+    final date = _selectedDate?.toIso8601String() ?? DateTime.now().toIso8601String();
+
+    if (widget.task == null) {
+      await db.insertTask(Task(
+        userId: widget.userId,
+        title: title,
+        description: desc,
+        dueDate: date,
+      ) as Map<String, dynamic>);
+    } else {
+      await db.updateTask(Task(
+        id: widget.task!.id,
+        userId: widget.userId,
+        title: title,
+        description: desc,
+        dueDate: date,
+      ) as Map<String, dynamic>);
+    }
+
+    Navigator.pop(context, true);
+    setState(() => _loading = false);
   }
 
   Future<void> _pickDate() async {
     final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
-      initialDate: _dueDate ?? now,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
+      initialDate: _selectedDate ?? now,
+      firstDate: now,
+      lastDate: DateTime(now.year + 5),
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.light(
-              primary: Colors.brown,
+              primary: AppColors.terracotta,
               onPrimary: Colors.white,
-              onSurface: Colors.black87,
+              onSurface: AppColors.saddle,
             ),
           ),
           child: child!,
         );
       },
     );
-    if (picked != null) setState(() => _dueDate = picked);
-  }
-
-  Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
-    final isoDate = (_dueDate ?? DateTime.now()).toIso8601String();
-    final map = {
-      if (widget.task?.id != null) 'id': widget.task!.id,
-      'title': _titleCtrl.text.trim(),
-      'description': _descCtrl.text.trim(),
-      'due_date': isoDate,
-      'status': widget.task?.status ?? 'pending',
-      'priority': _priority,
-      'user_id': widget.userId,
-    };
-    if (widget.task == null) {
-      await db.insertTask(map);
-    } else {
-      await db.updateTask(map);
+    if (picked != null) {
+      setState(() => _selectedDate = picked);
     }
-    Navigator.of(context).pop(true);
   }
 
   @override
   Widget build(BuildContext context) {
-    final dateText = _dueDate == null ? 'Pick due date' : DateFormat.yMMMd().format(_dueDate!);
-
     return Scaffold(
-      backgroundColor: Colors.grey[900],
+      backgroundColor: AppColors.latte,
       appBar: AppBar(
-        title: Text(widget.task == null ? 'Add Task' : 'Edit Task'),
-        backgroundColor: Colors.brown,
+        backgroundColor: AppColors.terracotta,
+        elevation: 0,
         centerTitle: true,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              _buildCard(
-                child: TextFormField(
-                  controller: _titleCtrl,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(labelText: 'Title', border: InputBorder.none, labelStyle: TextStyle(color: Colors.white70)),
-                  validator: (s) => (s == null || s.trim().isEmpty) ? 'Enter title' : null,
-                ),
-              ),
-              const SizedBox(height: 16),
-              _buildCard(
-                child: TextFormField(
-                  controller: _descCtrl,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(labelText: 'Description', border: InputBorder.none, labelStyle: TextStyle(color: Colors.white70)),
-                  minLines: 3,
-                  maxLines: 6,
-                ),
-              ),
-              const SizedBox(height: 16),
-              _buildCard(
-                child: Row(
-                  children: [
-                    Expanded(child: Text(dateText, style: const TextStyle(fontSize: 15, color: Colors.white))),
-                    ElevatedButton(
-                      onPressed: _pickDate,
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.brown, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                      child: const Text('Select'),
-                    )
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              _buildCard(
-                child: DropdownButtonFormField<String>(
-                  value: _priority,
-                  items: ['low', 'medium', 'high']
-                      .map((p) => DropdownMenuItem(value: p, child: Text(p[0].toUpperCase() + p.substring(1), style: const TextStyle(fontSize: 15, color: Colors.white))))
-                      .toList(),
-                  onChanged: (v) => setState(() => _priority = v ?? 'low'),
-                  decoration: const InputDecoration(labelText: 'Priority', border: InputBorder.none, labelStyle: TextStyle(color: Colors.white70)),
-                ),
-              ),
-              const SizedBox(height: 30),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _save,
-                  style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), backgroundColor: Colors.brown),
-                  child: const Text('Save Task', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white)),
-                ),
-              ),
-            ],
+        title: Text(
+          widget.task == null ? "Add Task" : "Edit Task",
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
           ),
         ),
       ),
-    );
-  }
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [AppColors.caramel, AppColors.latte],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Card(
+            elevation: 6,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    // Title
+                    TextFormField(
+                      controller: _titleCtrl,
+                      decoration: InputDecoration(
+                        prefixIcon: const Icon(Icons.title, color: AppColors.terracotta),
+                        labelText: "Task Title",
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      validator: (v) => v == null || v.isEmpty ? "Enter task title" : null,
+                    ),
+                    const SizedBox(height: 16),
 
-  Widget _buildCard({required Widget child}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.grey[850],
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 6, offset: const Offset(0, 3))],
+                    // Description
+                    TextFormField(
+                      controller: _descCtrl,
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        prefixIcon: const Icon(Icons.notes, color: AppColors.terracotta),
+                        labelText: "Description",
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Due Date
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            _selectedDate == null
+                                ? "No date selected"
+                                : "Due: ${_selectedDate!.toLocal().toString().split(' ')[0]}",
+                            style: const TextStyle(color: AppColors.saddle, fontSize: 16),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.calendar_month, color: AppColors.terracotta),
+                          onPressed: _pickDate,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 28),
+
+                    // Save Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          gradient: const LinearGradient(
+                            colors: [AppColors.terracotta, AppColors.caramel],
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                          ),
+                        ),
+                        child: ElevatedButton(
+                          onPressed: _loading ? null : _saveTask,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: _loading
+                              ? const CircularProgressIndicator(color: Colors.white)
+                              : Text(
+                            widget.task == null ? "Save Task" : "Update Task",
+                            style: const TextStyle(fontSize: 18, color: Colors.white),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
-      child: child,
     );
   }
 }
