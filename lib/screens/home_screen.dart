@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../db/task_database.dart';
 import '../model/task_model.dart';
 import '../task_color/app_color.dart';
 import 'add_edit_task_screen.dart';
 import 'login.dart';
-
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeScreen extends StatefulWidget {
   final int userId;
-  const HomeScreen({Key? key, required this.userId}) : super(key: key);
+  const HomeScreen({super.key, required this.userId});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -24,10 +23,10 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _load();
+    _loadTasks();
   }
 
-  Future<void> _load() async {
+  Future<void> _loadTasks() async {
     final maps = await db.getTasks(
       userId: widget.userId,
       status: filter == 'all' ? null : filter,
@@ -35,187 +34,176 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => tasks = maps.map((m) => Task.fromMap(m)).toList());
   }
 
-  Future<void> _delete(Task t) async {
+  Future<void> _deleteTask(Task t) async {
     if (t.id != null) await db.deleteTask(t.id!);
-    await _load();
+    await _loadTasks();
   }
 
   Future<void> _toggleComplete(Task t) async {
-    t.status = (t.status == 'pending') ? 'completed' : 'pending';
+    t.status = t.status == 'pending' ? 'completed' : 'pending';
     await db.updateTask(t.toMap());
-    await _load();
+    await _loadTasks();
   }
 
   Future<void> _openAddEdit([Task? task]) async {
-    final changed = await Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => AddEditTaskScreen(task: task, userId: widget.userId),
-    ));
-    if (changed == true) await _load();
+    final changed = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AddEditTaskScreen(task: task, userId: widget.userId),
+      ),
+    );
+    if (changed == true) await _loadTasks();
+  }
+
+  void _confirmDelete(Task t) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text(' Do you want to delete a task?'),
+        content: Text('Delete task "${t.title}"?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                await _deleteTask(t);
+              },
+              child: const Text('Delete')),
+        ],
+      ),
+    );
   }
 
   Future<void> _logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('logged_user_id');
-    Navigator.pushReplacement(
+
+    Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (_) => const LoginScreen()),
+          (route) => false,
     );
   }
 
-  Color priorityColor(String p) {
+  Color _priorityColor(String p) {
     switch (p) {
       case 'high':
-        return AppColors.saddle;
-      case 'medium':
         return AppColors.terracotta;
+      case 'medium':
+        return AppColors.caramel;
       default:
-        return AppColors.grey;
+        return AppColors.tan;
     }
   }
 
-  Widget _buildTaskCard(Task t) {
+  Widget _taskCard(Task t) {
     final due = DateTime.tryParse(t.dueDate);
-    final dueText = due == null ? '' : DateFormat.yMMMd().format(due);
-    final isDone = t.status == 'completed';
+    final dueText = due != null ? DateFormat.yMMMd().format(due) : '';
+    final titleStyle =
+    t.status == 'completed' ? const TextStyle(decoration: TextDecoration.lineThrough) : null;
 
-    return GestureDetector(
-      onLongPress: () => _delete(t),
-      onTap: () => _openAddEdit(t),
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          gradient: LinearGradient(
-            colors: isDone
-                ? [AppColors.grey.withOpacity(0.6), AppColors.grey.withOpacity(0.4)]
-                : [AppColors.toast, AppColors.latte],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          border: Border(
-            left: BorderSide(color: priorityColor(t.priority), width: 6),
-          ),
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 2,
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: ListTile(
+        leading: Checkbox(
+          value: t.status == 'completed',
+          onChanged: (_) => _toggleComplete(t),
+          activeColor: AppColors.caramel,
         ),
-        child: Row(
+        title: Text(t.title, style: titleStyle),
+        subtitle: Row(
           children: [
-            Checkbox(
-              value: isDone,
-              onChanged: (_) => _toggleComplete(t),
-              activeColor: AppColors.saddle,
-              checkColor: Colors.white,
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    t.title,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.black,
-                      decoration:
-                      isDone ? TextDecoration.lineThrough : null,
-                    ),
-                  ),
-                  if (t.description.isNotEmpty)
-                    Text(
-                      t.description,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppColors.grey,
-                        fontSize: 13,
-                      ),
-                    ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color:
-                          priorityColor(t.priority).withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          t.priority.toUpperCase(),
-                          style: TextStyle(
-                            color: priorityColor(t.priority),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      if (dueText.isNotEmpty)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.mocha,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            dueText,
-                            style: const TextStyle(
-                              color: AppColors.saddle,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ],
+            Text(dueText),
+            const SizedBox(width: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: _priorityColor(t.priority),
+                borderRadius: BorderRadius.circular(8),
               ),
-            )
+              child: Text(
+                  t.priority[0].toUpperCase() + t.priority.substring(1),
+                  style: const TextStyle(fontSize: 12)),
+            ),
           ],
         ),
+        onTap: () => _openAddEdit(t),
+        onLongPress: () => _confirmDelete(t),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.latte,
-      appBar: AppBar(
-        title: const Text("My Tasks"),
-        centerTitle: true,
-        backgroundColor: AppColors.terracotta,
-        actions: [
-          IconButton(
-            onPressed: _logout,
-            icon: const Icon(Icons.logout, color: Colors.white),
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.terracotta,
-        onPressed: () => _openAddEdit(),
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
-      body: tasks.isEmpty
-          ? const Center(
-        child: Text(
-          "No tasks found",
-          style: TextStyle(
-            color: AppColors.grey,
-            fontSize: 16,
-          ),
+    return WillPopScope(
+      onWillPop: () async => false, // disables back button
+      child: Scaffold(
+        backgroundColor: AppColors.latte,
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          title: const Text('TaskTrack'),
+          backgroundColor: AppColors.caramel,
+          actions: [
+            IconButton(onPressed: _logout, icon: const Icon(Icons.logout)),
+          ],
         ),
-      )
-          : ListView.builder(
-        itemCount: tasks.length,
-        itemBuilder: (_, i) => _buildTaskCard(tasks[i]),
+        body: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                ChoiceChip(
+                  label: const Text('All'),
+                  selected: filter == 'all',
+                  onSelected: (_) {
+                    filter = 'all';
+                    _loadTasks();
+                  },
+                ),
+                ChoiceChip(
+                  label: const Text('Pending'),
+                  selected: filter == 'pending',
+                  onSelected: (_) {
+                    filter = 'pending';
+                    _loadTasks();
+                  },
+                ),
+                ChoiceChip(
+                  label: const Text('Completed'),
+                  selected: filter == 'completed',
+                  onSelected: (_) {
+                    filter = 'completed';
+                    _loadTasks();
+                  },
+                ),
+              ],
+            ),
+            Expanded(
+              child: tasks.isEmpty
+                  ? Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    Icon(Icons.inbox, size: 64, color: Colors.grey),
+                    SizedBox(height: 8),
+                    Text('No tasks yet'),
+                  ],
+                ),
+              )
+                  : ListView.builder(
+                itemCount: tasks.length,
+                itemBuilder: (_, i) => _taskCard(tasks[i]),
+              ),
+            ),
+          ],
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () => _openAddEdit(),
+          backgroundColor: AppColors.caramel,
+          child: const Icon(Icons.add),
+        ),
       ),
     );
   }

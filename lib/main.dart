@@ -1,24 +1,38 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'screens/login.dart';
-import 'screens/home_screen.dart';
-import 'screens/splash.dart';
+import 'package:tasktracker/screens/splash.dart';
+import 'package:tasktracker/task_color/app_color.dart';
 
 void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-  runApp(const TaskTrackerApp());
+  runApp(const TaskTrackApp());
 }
 
-class TaskTrackerApp extends StatelessWidget {
-  const TaskTrackerApp({Key? key}) : super(key: key);
+class TaskTrackApp extends StatelessWidget {
+  const TaskTrackApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Task Tracker',
-      theme: ThemeData(primarySwatch: Colors.blue),
+      title: "TaskTrack",
+      theme: ThemeData(
+        primaryColor: AppColors.caramel,
+        scaffoldBackgroundColor: AppColors.latte,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+        appBarTheme: const AppBarTheme(
+          backgroundColor: AppColors.caramel,
+          elevation: 0,
+          titleTextStyle: TextStyle(
+            color: AppColors.saddle,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+          iconTheme: IconThemeData(color: AppColors.saddle),
+        ),
+        floatingActionButtonTheme: const FloatingActionButtonThemeData(
+          backgroundColor: AppColors.caramel,
+        ),
+      ),
       home: const SplashScreen(),
+      debugShowCheckedModeBanner: false,
     );
   }
 }
