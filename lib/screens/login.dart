@@ -57,7 +57,6 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Icon / Logo
               Icon(
                 Icons.task_alt,
                 size: 100,
@@ -74,7 +73,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 32),
 
-              // Login Form
+              
               Form(
                 key: _formKey,
                 child: Column(

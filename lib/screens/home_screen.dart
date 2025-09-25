@@ -94,6 +94,7 @@ class _HomeScreenState extends State<HomeScreen> {
       default:
         return AppColors.tan;
     }
+
   }
 
   Widget _taskCard(Task t) {
@@ -125,7 +126,8 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               child: Text(
                   t.priority[0].toUpperCase() + t.priority.substring(1),
-                  style: const TextStyle(fontSize: 12)),
+                  style: TextStyle(fontSize: 12,
+                  color: t.priority=='high'?Colors.white : Colors.black,)),
             ),
           ],
         ),
@@ -138,7 +140,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
-      onWillPop: () async => false, // disables back button
+      onWillPop: () async => false,
       child: Scaffold(
         backgroundColor: AppColors.latte,
         appBar: AppBar(
