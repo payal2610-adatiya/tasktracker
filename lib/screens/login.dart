@@ -91,7 +91,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       validator: (v) =>
-                      v == null || v.trim().isEmpty ? 'Enter Email' : null,
+                      v == null || v.trim().isEmpty ? 'Enter Username' : null,
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
